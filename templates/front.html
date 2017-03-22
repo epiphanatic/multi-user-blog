@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+  {% if error == 'wronguser' %}
+    <span class="wronguser">You can't edit/delete other people's posts,
+      nor can you like/unlike your own!</span>
+    <a href="/blog" class="login-link">(remove message)</a>
+    <br><br>
+  {% endif %}
+
+  {% if error == 'sameuser' %}
+    <span class="wronguser">You've already liked that post!</span>
+    <a href="/blog" class="login-link">(remove message)</a>
+    <br><br>
+  {% endif %}
+
+  {% for p in posts %}
+    {{ p.render() | safe }}
+    <br><br>
+  {% endfor %}
+
+{% endblock %}

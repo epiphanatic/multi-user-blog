@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {{post.render() | safe}}
+<h2><a href="/blog">Go back to blog</a></h2>
+{% endblock %}

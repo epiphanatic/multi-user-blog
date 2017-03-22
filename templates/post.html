@@ -1,0 +1,57 @@
+<div class="post">
+  <div class="post-heading">
+    <div class="post-title">
+      {{p.subject}}
+    </div>
+
+    <div class="post-date">
+      {{p.created.strftime("%b %d, %Y")}}
+      by
+      {{p.created_by_uname}}
+    </div>
+  </div>
+
+  <div class="post-content">
+    {{p._render_text | safe}}
+  </div>
+
+  <div class="actions-bar">
+    <div class="likes">
+      <form method="post">
+        &#128077;
+        <a href="/blog/likepost/{{p.key().id()}}" class="login-link">Like</a>
+        <span>({{likes.count()}})</span>
+        &nbsp; &nbsp;
+        &#128078;
+        <a href="/blog/unlikepost/{{p.key().id()}}" class="login-link">Unlike</a>
+      </form>
+    </div>
+    <div class="actions">
+      &nbsp; &nbsp;
+      <a href="/blog/commentpost/{{p.key().id()}}" class="login-link">Comment</a>
+      &nbsp; &nbsp;
+      <a href="/blog/editpost/{{p.key().id()}}" class="login-link">Edit</a>
+      &nbsp; &nbsp;
+      <a href="/blog/deletepost/{{p.key().id()}}" class="login-link">Delete</a>
+    </div>
+  </div>
+
+  <div class="comments">
+    <div class="comment-left"></div>
+    <div class="comment-right">
+      <h4>Comments</h4>
+      {% for c in comments %}
+        <div class="comment">
+          <span class="comment-username">{{c.created_by_uname}}</span>
+          <span class="login-link">on {{c.created.strftime("%b %d, %Y")}}:</span>
+          <span>{{c.comment}}</span>
+        </div>
+        <div class="comment-actions">
+           <a href="/blog/editcomment/{{c.key().id()}}" class="login-link">Edit</a>
+          &nbsp; &nbsp;
+          <a href="/blog/deletecomment/{{c.key().id()}}" class="login-link">Delete</a>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>

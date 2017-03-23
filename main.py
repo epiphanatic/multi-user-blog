@@ -240,6 +240,7 @@ class EditPostHandler(BlogHandler):
         else:
             self.redirect("/login")
 
+    @post_exists
     def post(self, post_id):
         if self.user:
             user_id = self.user.key().id()

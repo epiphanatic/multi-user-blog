@@ -1,9 +1,7 @@
 import os
 import re
-import random
-import hashlib
 import hmac
-from string import letters
+from models import Comment, User, Like, Post
 
 import webapp2
 import jinja2
@@ -75,57 +73,6 @@ class MainPage(BlogHandler):
         self.write('Hello, Udacity!')
 
 
-# user stuff
-
-def make_salt(length=5):
-    return ''.join(random.choice(letters) for x in xrange(length))
-
-
-def make_pw_hash(name, pw, salt=None):
-    if not salt:
-        salt = make_salt()
-    h = hashlib.sha256(name + pw + salt).hexdigest()
-    return '%s,%s' % (salt, h)
-
-
-def valid_pw(name, password, h):
-    salt = h.split(',')[0]
-    return h == make_pw_hash(name, password, salt)
-
-
-def users_key(group='default'):
-    return db.Key.from_path('users', group)
-
-
-class User(db.Model):
-    name = db.StringProperty(required=True)
-    pw_hash = db.StringProperty(required=True)
-    email = db.StringProperty()
-
-    @classmethod
-    def by_id(cls, uid):
-        return User.get_by_id(uid, parent=users_key())
-
-    @classmethod
-    def by_name(cls, name):
-        u = User.all().filter('name =', name).get()
-        return u
-
-    @classmethod
-    def register(cls, name, pw, email = None):
-        pw_hash = make_pw_hash(name, pw)
-        return User(parent=users_key(),
-                    name=name,
-                    pw_hash=pw_hash,
-                    email=email)
-
-    @classmethod
-    def login(cls, name, pw):
-        u = cls.by_name(name)
-        if u and valid_pw(name, pw, u.pw_hash):
-            return u
-
-
 # existence checking decorator functions
 
 def post_exists(function):
@@ -156,25 +103,6 @@ def comment_exists(function):
 
 def blog_key(name='default'):
     return db.Key.from_path('blogs', name)
-
-
-class Post(db.Model):
-    subject = db.StringProperty(required=True)
-    content = db.TextProperty(required=True)
-    created = db.DateTimeProperty(auto_now_add=True)
-    last_modified = db.DateTimeProperty(auto_now=True)
-    created_by_id = db.StringProperty(required=True)
-    created_by_uname = db.StringProperty(required=True)
-
-    def render(self):
-        post_id = str(self.key().id())
-        comments = db.GqlQuery("select * from Comment where post_id = '%s' "
-                               "order by created desc" % post_id)
-        likes = db.GqlQuery("select * from Like where post_id = '%s'" %
-                            post_id)
-
-        self._render_text = self.content.replace('\n', '<br>')
-        return render_str("post.html", p=self, comments=comments, likes=likes)
 
 
 class BlogFront(BlogHandler):
@@ -281,15 +209,6 @@ class DeletePostHandler(BlogHandler):
             self.redirect('/login')
 
 
-class Comment(db.Model):
-    comment = db.StringProperty(required=True)
-    post_id = db.StringProperty(required=True)
-    created = db.DateTimeProperty(auto_now_add=True)
-    last_modified = db.DateTimeProperty(auto_now=True)
-    created_by_id = db.StringProperty(required=True)
-    created_by_uname = db.StringProperty(required=True)
-
-
 class CommentPostHandler(BlogHandler):
     @post_exists
     def get(self, post_id, post):
@@ -379,12 +298,6 @@ class DeleteCommentHandler(BlogHandler):
             self.redirect('/login')
 
 
-class Like(db.Model):
-    post_id = db.StringProperty(required=True)
-    liked_by_id = db.StringProperty(required=True)
-    liked = db.BooleanProperty(required=True)
-
-
 class LikePostHandler(BlogHandler):
     @post_exists
     def get(self, post_id, post):
@@ -441,6 +354,8 @@ class UnLikePostHandler(BlogHandler):
             self.redirect('/login')
 
 
+# validity checks
+
 USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
 
 
@@ -459,6 +374,8 @@ EMAIL_RE = re.compile(r'^[\S]+@[\S]+\.[\S]+$')
 def valid_email(email):
     return not email or EMAIL_RE.match(email)
 
+
+# Registration and authentication
 
 class Signup(BlogHandler):
     def get(self):

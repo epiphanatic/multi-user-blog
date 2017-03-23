@@ -126,6 +126,32 @@ class User(db.Model):
             return u
 
 
+# existence checking decorator functions
+
+def post_exists(function):
+    def wrapper(self, post_id):
+        key = db.Key.from_path('Post', int(post_id), parent=blog_key())
+        post = db.get(key)
+        if post:
+            return function(self, post_id)
+        else:
+            self.redirect('/')
+            return
+    return wrapper
+
+
+def comment_exists(function):
+    def wrapper(self, comment_id):
+        key = db.Key.from_path('Comment', int(comment_id), parent=blog_key())
+        comment = db.get(key)
+        if comment:
+            return function(self, comment_id)
+        else:
+            self.redirect('/')
+            return
+    return wrapper
+
+
 # blog stuff
 
 def blog_key(name='default'):
@@ -159,6 +185,7 @@ class BlogFront(BlogHandler):
 
 
 class PostPage(BlogHandler):
+    @post_exists
     def get(self, post_id):
         key = db.Key.from_path('Post', int(post_id), parent=blog_key())
         post = db.get(key)
@@ -199,6 +226,7 @@ class NewPost(BlogHandler):
 
 
 class EditPostHandler(BlogHandler):
+    @post_exists
     def get(self, post_id):
         if self.user:
             user_id = self.user.key().id()
@@ -238,6 +266,7 @@ class EditPostHandler(BlogHandler):
 
 
 class DeletePostHandler(BlogHandler):
+    @post_exists
     def get(self, post_id):
         if self.user:
             user_id = self.user.key().id()
@@ -264,9 +293,9 @@ class Comment(db.Model):
 
 
 class CommentPostHandler(BlogHandler):
+    @post_exists
     def get(self, post_id):
         if self.user:
-            user_id = self.user.key().id()
             key = db.Key.from_path('Post', int(post_id), parent=blog_key())
             post = db.get(key)
             self.render("commentpost.html", post=post)
@@ -274,19 +303,28 @@ class CommentPostHandler(BlogHandler):
         else:
             self.redirect('/login')
 
+    @post_exists
     def post(self, post_id):
         comment = self.request.get('comment')
         created_by_id = str(self.user.key().id())
         created_by_uname = self.user.name
         post_id = post_id
-        c = Comment(parent=blog_key(), post_id=post_id, comment=comment,
-                    created_by_id=created_by_id,
-                    created_by_uname=created_by_uname)
-        c.put()
-        self.redirect('/blog/%s' % str(post_id))
+        key = db.Key.from_path('Post', int(post_id), parent=blog_key())
+        post = db.get(key)
+
+        if comment:
+            c = Comment(parent=blog_key(), post_id=post_id, comment=comment,
+                        created_by_id=created_by_id,
+                        created_by_uname=created_by_uname)
+            c.put()
+            self.redirect('/blog/%s' % str(post_id))
+        else:
+            error = "comment cannot be blank!"
+            self.render("commentpost.html", post=post, error=error)
 
 
 class EditCommentHandler(BlogHandler):
+    @comment_exists
     def get(self, comment_id):
         if self.user:
             user_id = self.user.key().id()
@@ -302,6 +340,7 @@ class EditCommentHandler(BlogHandler):
         else:
             self.redirect("/login")
 
+    @comment_exists
     def post(self, comment_id):
         if self.user:
             user_id = self.user.key().id()
@@ -328,6 +367,7 @@ class EditCommentHandler(BlogHandler):
 
 
 class DeleteCommentHandler(BlogHandler):
+    @comment_exists
     def get(self, comment_id):
         if self.user:
             user_id = self.user.key().id()
@@ -352,6 +392,7 @@ class Like(db.Model):
 
 
 class LikePostHandler(BlogHandler):
+    @post_exists
     def get(self, post_id):
         if self.user:
             user_id = str(self.user.key().id())
@@ -381,6 +422,7 @@ class LikePostHandler(BlogHandler):
 
 
 class UnLikePostHandler(BlogHandler):
+    @post_exists
     def get(self, post_id):
         if self.user:
             user_id = str(self.user.key().id())

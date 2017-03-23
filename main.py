@@ -133,7 +133,7 @@ def post_exists(function):
         key = db.Key.from_path('Post', int(post_id), parent=blog_key())
         post = db.get(key)
         if post:
-            return function(self, post_id)
+            return function(self, post_id, post)
         else:
             self.redirect('/')
             return
@@ -145,7 +145,7 @@ def comment_exists(function):
         key = db.Key.from_path('Comment', int(comment_id), parent=blog_key())
         comment = db.get(key)
         if comment:
-            return function(self, comment_id)
+            return function(self, comment_id, comment)
         else:
             self.redirect('/')
             return
@@ -186,9 +186,8 @@ class BlogFront(BlogHandler):
 
 class PostPage(BlogHandler):
     @post_exists
-    def get(self, post_id):
-        key = db.Key.from_path('Post', int(post_id), parent=blog_key())
-        post = db.get(key)
+    def get(self, post_id, post):
+        post = post
 
         if not post:
             self.error(404)
@@ -227,11 +226,11 @@ class NewPost(BlogHandler):
 
 class EditPostHandler(BlogHandler):
     @post_exists
-    def get(self, post_id):
+    def get(self, post_id, post):
         if self.user:
             user_id = self.user.key().id()
-            key = db.Key.from_path('Post', int(post_id), parent=blog_key())
-            post = db.get(key)
+            post = post
+
             if str(post.created_by_id) == str(user_id):
                 self.render("editpost.html", user_id=user_id, post=post)
             else:
@@ -241,11 +240,10 @@ class EditPostHandler(BlogHandler):
             self.redirect("/login")
 
     @post_exists
-    def post(self, post_id):
+    def post(self, post_id, post):
         if self.user:
             user_id = self.user.key().id()
-            key = db.Key.from_path('Post', int(post_id), parent=blog_key())
-            post = db.get(key)
+            post = post
             subject = self.request.get('subject')
             content = self.request.get('content')
 
@@ -268,11 +266,10 @@ class EditPostHandler(BlogHandler):
 
 class DeletePostHandler(BlogHandler):
     @post_exists
-    def get(self, post_id):
+    def get(self, post_id, post):
         if self.user:
             user_id = self.user.key().id()
-            key = db.Key.from_path('Post', int(post_id), parent=blog_key())
-            post = db.get(key)
+            post = post
 
             if str(post.created_by_id) == str(user_id):
                 post.delete()
@@ -295,24 +292,22 @@ class Comment(db.Model):
 
 class CommentPostHandler(BlogHandler):
     @post_exists
-    def get(self, post_id):
+    def get(self, post_id, post):
         if self.user:
-            key = db.Key.from_path('Post', int(post_id), parent=blog_key())
-            post = db.get(key)
+            post = post
             self.render("commentpost.html", post=post)
 
         else:
             self.redirect('/login')
 
     @post_exists
-    def post(self, post_id):
+    def post(self, post_id, post):
         if self.user:
             comment = self.request.get('comment')
             created_by_id = str(self.user.key().id())
             created_by_uname = self.user.name
             post_id = post_id
-            key = db.Key.from_path('Post', int(post_id), parent=blog_key())
-            post = db.get(key)
+            post = post
 
             if comment:
                 c = Comment(parent=blog_key(), post_id=post_id,
@@ -330,12 +325,10 @@ class CommentPostHandler(BlogHandler):
 
 class EditCommentHandler(BlogHandler):
     @comment_exists
-    def get(self, comment_id):
+    def get(self, comment_id, comment):
         if self.user:
             user_id = self.user.key().id()
-            key = db.Key.from_path('Comment', int(comment_id),
-                                   parent=blog_key())
-            comment = db.get(key)
+            comment = comment
             if str(comment.created_by_id) == str(user_id):
                 self.render("editcomment.html", user_id=user_id,
                             comment=comment)
@@ -346,12 +339,10 @@ class EditCommentHandler(BlogHandler):
             self.redirect("/login")
 
     @comment_exists
-    def post(self, comment_id):
+    def post(self, comment_id, comment):
         if self.user:
             user_id = self.user.key().id()
-            key = db.Key.from_path('Comment', int(comment_id),
-                                   parent=blog_key())
-            comment = db.get(key)
+            comment = comment
             comment_content = self.request.get('comment')
 
             if str(comment.created_by_id) == str(user_id):
@@ -373,12 +364,10 @@ class EditCommentHandler(BlogHandler):
 
 class DeleteCommentHandler(BlogHandler):
     @comment_exists
-    def get(self, comment_id):
+    def get(self, comment_id, comment):
         if self.user:
             user_id = self.user.key().id()
-            key = db.Key.from_path('Comment', int(comment_id),
-                                   parent=blog_key())
-            comment = db.get(key)
+            comment = comment
 
             if str(comment.created_by_id) == str(user_id):
                 comment.delete()
@@ -398,11 +387,10 @@ class Like(db.Model):
 
 class LikePostHandler(BlogHandler):
     @post_exists
-    def get(self, post_id):
+    def get(self, post_id, post):
         if self.user:
             user_id = str(self.user.key().id())
-            postKey = db.Key.from_path('Post', int(post_id), parent=blog_key())
-            post = db.get(postKey)
+            post = post
 
             user_like = db.GqlQuery("select * from Like where post_id = '%s' "
                                     "and liked_by_id ='%s'" %
@@ -428,11 +416,10 @@ class LikePostHandler(BlogHandler):
 
 class UnLikePostHandler(BlogHandler):
     @post_exists
-    def get(self, post_id):
+    def get(self, post_id, post):
         if self.user:
             user_id = str(self.user.key().id())
-            postKey = db.Key.from_path('Post', int(post_id), parent=blog_key())
-            post = db.get(postKey)
+            post = post
 
             user_likes = db.GqlQuery("select * from Like where post_id = '%s' "
                                      "and liked_by_id ='%s'" %
@@ -441,7 +428,8 @@ class UnLikePostHandler(BlogHandler):
             # if the current user is not the one who made the post:
             if str(post.created_by_id) != str(user_id):
                     for like in user_likes:
-                        likeKey = db.Key.from_path('Like', like.key().id(), parent=blog_key())
+                        likeKey = db.Key.from_path('Like', like.key().id(),
+                                                   parent=blog_key())
                         like_obj = db.get(likeKey)
                         like_obj.delete()
 

@@ -97,11 +97,47 @@ def comment_exists(function):
 # user checks decorator functions
 
 def user_logged_in(function):
-    def wrapper(self):
+    def wrapper(self, *args, **kwargs):
         if self.user:
-            return function(self)
+            return function(self, *args, **kwargs)
         else:
             self.redirect('/login')
+            return
+    return wrapper
+
+
+def user_owns_post(function):
+    def wrapper(self, post_id, post):
+        user_id = self.user.key().id()
+        if str(post.created_by_id) == str(user_id):
+            return function(self, post_id, post)
+        else:
+            error = "wronguser"
+            self.redirect("/blog?error=%s" % error)
+            return
+    return wrapper
+
+
+def user_owns_comment(function):
+    def wrapper(self, comment_id, comment):
+        user_id = self.user.key().id()
+        if str(comment.created_by_id) == str(user_id):
+            return function(self, comment_id, comment)
+        else:
+            error = "wronguser"
+            self.redirect("/blog?error=%s" % error)
+            return
+    return wrapper
+
+
+def user_not_own_post(function):
+    def wrapper(self, post_id, post):
+        user_id = self.user.key().id()
+        if str(post.created_by_id) != str(user_id):
+            return function(self, post_id, post)
+        else:
+            error = "wronguser"
+            self.redirect("/blog?error=%s" % error)
             return
     return wrapper
 
@@ -157,204 +193,150 @@ class NewPost(BlogHandler):
 
 class EditPostHandler(BlogHandler):
     @post_exists
+    @user_logged_in
+    @user_owns_post
     def get(self, post_id, post):
-        if self.user:
-            user_id = self.user.key().id()
-            post = post
+        user_id = self.user.key().id()
+        post = post
 
-            if str(post.created_by_id) == str(user_id):
-                self.render("editpost.html", user_id=user_id, post=post)
-            else:
-                error = "wronguser"
-                self.redirect("/blog?error=%s" % error)
-        else:
-            self.redirect("/login")
+        self.render("editpost.html", user_id=user_id, post=post)
 
     @post_exists
+    @user_logged_in
+    @user_owns_post
     def post(self, post_id, post):
-        if self.user:
-            user_id = self.user.key().id()
-            post = post
-            subject = self.request.get('subject')
-            content = self.request.get('content')
+        post = post
+        subject = self.request.get('subject')
+        content = self.request.get('content')
 
-            if str(post.created_by_id) == str(user_id):
-                if subject and content:
-                    post.subject = subject
-                    post.content = content
-                    post.put()
-                    self.redirect('/blog/%s' % str(post.key().id()))
+        if subject and content:
+            post.subject = subject
+            post.content = content
+            post.put()
+            self.redirect('/blog/%s' % str(post.key().id()))
 
-                else:
-                    error = "subject and content cannot be blank!"
-                    self.render("editpost.html", post=post, error=error)
-            else:
-                error = "wronguser"
-                self.redirect("/blog?error=%s" % error)
         else:
-            self.redirect('/blog')
+            error = "subject and content cannot be blank!"
+            self.render("editpost.html", post=post, error=error)
 
 
 class DeletePostHandler(BlogHandler):
     @post_exists
+    @user_logged_in
+    @user_owns_post
     def get(self, post_id, post):
-        if self.user:
-            user_id = self.user.key().id()
-            post = post
-
-            if str(post.created_by_id) == str(user_id):
-                post.delete()
-                self.render("deletepost.html", post=post)
-            else:
-                error = "wronguser"
-                self.redirect("/blog?error=%s" % error)
-        else:
-            self.redirect('/login')
+        post = post
+        post.delete()
+        self.render("deletepost.html", post=post)
 
 
 class CommentPostHandler(BlogHandler):
     @post_exists
+    @user_logged_in
     def get(self, post_id, post):
-        if self.user:
-            post = post
-            self.render("commentpost.html", post=post)
-
-        else:
-            self.redirect('/login')
+        post = post
+        self.render("commentpost.html", post=post)
 
     @post_exists
+    @user_logged_in
     def post(self, post_id, post):
-        if self.user:
-            comment = self.request.get('comment')
-            created_by_id = str(self.user.key().id())
-            created_by_uname = self.user.name
-            post_id = post_id
-            post = post
+        comment = self.request.get('comment')
+        created_by_id = str(self.user.key().id())
+        created_by_uname = self.user.name
+        post_id = post_id
+        post = post
 
-            if comment:
-                c = Comment(parent=blog_key(), post_id=post_id,
-                            comment=comment,
-                            created_by_id=created_by_id,
-                            created_by_uname=created_by_uname)
-                c.put()
-                self.redirect('/blog/%s' % str(post_id))
-            else:
-                error = "comment cannot be blank!"
-                self.render("commentpost.html", post=post, error=error)
+        if comment:
+            c = Comment(parent=blog_key(), post_id=post_id,
+                        comment=comment,
+                        created_by_id=created_by_id,
+                        created_by_uname=created_by_uname)
+            c.put()
+            self.redirect('/blog/%s' % str(post_id))
         else:
-            self.redirect("/login")
+            error = "comment cannot be blank!"
+            self.render("commentpost.html", post=post, error=error)
 
 
 class EditCommentHandler(BlogHandler):
     @comment_exists
+    @user_logged_in
+    @user_owns_comment
     def get(self, comment_id, comment):
-        if self.user:
-            user_id = self.user.key().id()
-            comment = comment
-            if str(comment.created_by_id) == str(user_id):
-                self.render("editcomment.html", user_id=user_id,
-                            comment=comment)
-            else:
-                error = "wronguser"
-                self.redirect("/blog?error=%s" % error)
-        else:
-            self.redirect("/login")
+        user_id = self.user.key().id()
+        comment = comment
+        self.render("editcomment.html", user_id=user_id, comment=comment)
 
     @comment_exists
+    @user_logged_in
+    @user_owns_comment
     def post(self, comment_id, comment):
-        if self.user:
-            user_id = self.user.key().id()
-            comment = comment
-            comment_content = self.request.get('comment')
+        user_id = self.user.key().id()
+        comment = comment
+        comment_content = self.request.get('comment')
 
-            if str(comment.created_by_id) == str(user_id):
-                if comment_content:
-                    comment.comment = comment_content
-                    comment.put()
-                    self.redirect('/blog/%s' % str(comment.post_id))
+        if comment_content:
+            comment.comment = comment_content
+            comment.put()
+            self.redirect('/blog/%s' % str(comment.post_id))
 
-                else:
-                    error = "comment cannot be blank!"
-                    self.render("editcomment.html", comment=comment,
-                                error=error)
-            else:
-                error = "wronguser"
-                self.redirect("/blog?error=%s" % error)
         else:
-            self.redirect('/blog')
+            error = "comment cannot be blank!"
+            self.render("editcomment.html", comment=comment, error=error)
 
 
 class DeleteCommentHandler(BlogHandler):
     @comment_exists
+    @user_logged_in
+    @user_owns_comment
     def get(self, comment_id, comment):
-        if self.user:
-            user_id = self.user.key().id()
-            comment = comment
-
-            if str(comment.created_by_id) == str(user_id):
-                comment.delete()
-                self.render("deletecomment.html", comment=comment)
-            else:
-                error = "wronguser"
-                self.redirect("/blog?error=%s" % error)
-        else:
-            self.redirect('/login')
+        comment = comment
+        comment.delete()
+        self.render("deletecomment.html", comment=comment)
 
 
 class LikePostHandler(BlogHandler):
     @post_exists
+    @user_logged_in
+    @user_not_own_post
     def get(self, post_id, post):
-        if self.user:
-            user_id = str(self.user.key().id())
-            post = post
+        user_id = str(self.user.key().id())
+        post = post
 
-            user_like = db.GqlQuery("select * from Like where post_id = '%s' "
-                                    "and liked_by_id ='%s'" %
-                                    (post_id, user_id))
+        user_like = db.GqlQuery("select * from Like where post_id = '%s' "
+                                "and liked_by_id ='%s'" %
+                                (post_id, user_id))
 
-            # if the current user is not the one who made the post:
-            if str(post.created_by_id) != str(user_id):
-                # if they haven't already liked the post
-                if user_like.count() > 0:
-                    error = "sameuser"
-                    self.redirect("/blog?error=%s" % error)
-                else:
-                    like = Like(parent=blog_key(), post_id=post_id, liked=True,
-                                liked_by_id=user_id)
-                    like.put()
-                    self.redirect('/blog/%s' % str(post_id))
-            else:
-                error = "wronguser"
-                self.redirect("/blog?error=%s" % error)
+        # if they haven't already liked the post
+        if user_like.count() > 0:
+            error = "sameuser"
+            self.redirect("/blog?error=%s" % error)
         else:
-            self.redirect('/login')
+            like = Like(parent=blog_key(), post_id=post_id, liked=True,
+                        liked_by_id=user_id)
+            like.put()
+            self.redirect('/blog/%s' % str(post_id))
 
 
 class UnLikePostHandler(BlogHandler):
     @post_exists
+    @user_logged_in
+    @user_not_own_post
     def get(self, post_id, post):
-        if self.user:
-            user_id = str(self.user.key().id())
-            post = post
+        user_id = str(self.user.key().id())
+        post = post
 
-            user_likes = db.GqlQuery("select * from Like where post_id = '%s' "
-                                     "and liked_by_id ='%s'" %
-                                     (post_id, user_id))
+        user_likes = db.GqlQuery("select * from Like where post_id = '%s' "
+                                 "and liked_by_id ='%s'" %
+                                 (post_id, user_id))
 
-            # if the current user is not the one who made the post:
-            if str(post.created_by_id) != str(user_id):
-                    for like in user_likes:
-                        likeKey = db.Key.from_path('Like', like.key().id(),
-                                                   parent=blog_key())
-                        like_obj = db.get(likeKey)
-                        like_obj.delete()
+        for like in user_likes:
+            likeKey = db.Key.from_path('Like', like.key().id(),
+                                       parent=blog_key())
+            like_obj = db.get(likeKey)
+            like_obj.delete()
 
-                    self.redirect('/blog/%s' % str(post_id))
-            else:
-                error = "wronguser"
-                self.redirect("/blog?error=%s" % error)
-        else:
-            self.redirect('/login')
+        self.redirect('/blog/%s' % str(post_id))
 
 
 # validity checks

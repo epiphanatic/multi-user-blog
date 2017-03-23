@@ -68,11 +68,6 @@ def render_post(response, post):
     response.out.write(post.content)
 
 
-class MainPage(BlogHandler):
-    def get(self):
-        self.write('Hello, Udacity!')
-
-
 # existence checking decorator functions
 
 def post_exists(function):

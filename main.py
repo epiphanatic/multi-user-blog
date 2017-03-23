@@ -99,6 +99,18 @@ def comment_exists(function):
     return wrapper
 
 
+# user checks decorator functions
+
+def user_logged_in(function):
+    def wrapper(self):
+        if self.user:
+            return function(self)
+        else:
+            self.redirect('/login')
+            return
+    return wrapper
+
+
 # blog stuff
 
 def blog_key(name='default'):
@@ -125,16 +137,12 @@ class PostPage(BlogHandler):
 
 
 class NewPost(BlogHandler):
+    @user_logged_in
     def get(self):
-        if self.user:
-            self.render("newpost.html")
-        else:
-            self.redirect("/login")
+        self.render("newpost.html")
 
+    @user_logged_in
     def post(self):
-        if not self.user:
-            self.redirect('/blog')
-
         subject = self.request.get('subject')
         content = self.request.get('content')
         created_by_id = str(self.user.key().id())

@@ -1,75 +1,36 @@
-<!DOCTYPE html>
+{% extends "base.html" %}
 
-<html>
-  <head>
-    <title>Sign Up</title>
-    <style type="text/css">
-      .label {text-align: right}
-      .error {color: red}
-    </style>
+  {% block content %}
 
-  </head>
-
-  <body>
-    <h2>Signup</h2>
+  <h2>Signup</h2>
     <form method="post">
-      <table>
-        <tr>
-          <td class="label">
-            Username
-          </td>
-          <td>
-            <input type="text" name="username" value="{{username}}">
-          </td>
-          <td class="error">
-            {{error_username}}
-          </td>
-        </tr>
-
-        <tr>
-          <td class="label">
-            Password
-          </td>
-          <td>
-            <input type="password" name="password" value="">
-          </td>
-          <td class="error">
-            {{error_password}}
-          </td>
-        </tr>
-
-        <tr>
-          <td class="label">
-            Verify Password
-          </td>
-          <td>
-            <input type="password" name="verify" value="">
-          </td>
-          <td class="error">
-            {{error_verify}}
-          </td>
-        </tr>
-
-        <tr>
-          <td class="label">
-            Email (optional)
-          </td>
-          <td>
-            <input type="text" name="email" value="{{email}}">
-          </td>
-          <td class="error">
-            {{error_email}}
-          </td>
-        </tr>
-      </table>
-
+      <span class="label">Username: </span>
+      <br>
+      <input type="text" name="username" value="{{username}}">
+      <span class="error">{{error_username}}</span>
+      <br><br>
+      <span class="label">Password:</span>
+      <br>
+      <input type="password" name="password" value="">
+      <span class="error">{{error_password}}</span>
+      <br><br>
+      <span class="label">Verify Password:</span>
+      <br>
+      <input type="password" name="verify" value="">
+      <span class="error">{{error_verify}}</span>
+      <br><br>
+      <span class="label">Email (optional):</span>
+      <br>
+      <input type="text" name="email" value="{{email}}">
+      <span class="error">{{error_email}}</span>
+      <br><br>
       <input type="submit">
     </form>
     <br>
     <br>
-    <a href="/blog" class="login-link">Home</a>
-    &nbsp;&nbsp;
-    <a href="/login" class="login-link">Login</a>
-  </body>
 
-</html>
+    <p>Already have an account? <a href="/login" class="login-link">Login here</a> </p>
+
+    <a href="/blog" class="login-link">Home</a>
+
+  {% endblock %}

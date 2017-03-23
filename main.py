@@ -305,22 +305,26 @@ class CommentPostHandler(BlogHandler):
 
     @post_exists
     def post(self, post_id):
-        comment = self.request.get('comment')
-        created_by_id = str(self.user.key().id())
-        created_by_uname = self.user.name
-        post_id = post_id
-        key = db.Key.from_path('Post', int(post_id), parent=blog_key())
-        post = db.get(key)
+        if self.user:
+            comment = self.request.get('comment')
+            created_by_id = str(self.user.key().id())
+            created_by_uname = self.user.name
+            post_id = post_id
+            key = db.Key.from_path('Post', int(post_id), parent=blog_key())
+            post = db.get(key)
 
-        if comment:
-            c = Comment(parent=blog_key(), post_id=post_id, comment=comment,
-                        created_by_id=created_by_id,
-                        created_by_uname=created_by_uname)
-            c.put()
-            self.redirect('/blog/%s' % str(post_id))
+            if comment:
+                c = Comment(parent=blog_key(), post_id=post_id,
+                            comment=comment,
+                            created_by_id=created_by_id,
+                            created_by_uname=created_by_uname)
+                c.put()
+                self.redirect('/blog/%s' % str(post_id))
+            else:
+                error = "comment cannot be blank!"
+                self.render("commentpost.html", post=post, error=error)
         else:
-            error = "comment cannot be blank!"
-            self.render("commentpost.html", post=post, error=error)
+            self.redirect("/login")
 
 
 class EditCommentHandler(BlogHandler):
